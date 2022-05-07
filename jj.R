@@ -1,4 +1,3 @@
-ola bruninho
 library(readxl)
 QualidadeARO3 <- read_excel("C:/Users/bruno/Downloads/QualidadeARO3.xlsx")
 View(QualidadeARO3)
@@ -14,15 +13,51 @@ library(imputeTS)
 library(extremogram)
 library(tseries)
 library(forecast)
-
+library(sarima)
+library(zoo)
 ########## ANTAS-ESPINHO ##########
+
+#experiencias
+class(QualidadeARO3)
+model=auto.arima(QualidadeARO3[,1], D=1)
+forecast = forecast(model, h = 10)
+plot(forecast)
+start(QualidadeARO3); end(QualidadeARO3); frequency(QualidadeARO3)
+x <- sarima:::rgarch1p1(ar(2), alpha = 0.3, beta = 0.55, omega = 1, n.skip = 100)
 
 # Missing values
 statsNA(QualidadeARO3[,1])
 ggplot_na_distribution(QualidadeARO3[,1])
 
 # Time series decomposition
+
 AntasEspinho_TS=ts(QualidadeARO3[,1], start=c(1, 1), end=c(366, 24), frequency=24)
+isStationaryModel()
+plot(AntasEspinho_TS)
+boxplot(AntasEspinho_TS ~ cycle(AntasEspinho_TS))
+AntasEspinho_TSmonthly<-aggregate(AntasEspinho_TS)
+AntasEspinho_TSannual<-aggregate(AntasEspinho_TS)/12
+layout(1:2)
+plot(aggregate(AntasEspinho_TSmonthly))
+plot(AntasEspinho_TSannual)
+dec.Antas<-(decompose(AntasEspinho_TS))
+
+ts.plot(cbind(dec.Antas$trend, dec.Antas$trend * dec.Antas$seasonal), lty = 1:2)
+Antas.195 <- window(AntasEspinho_TSmonthly, start = c(1,100), freq = TRUE)
+Antas.265 <- window(AntasEspinho_TSmonthly, start = c(1,261), freq = TRUE)
+A195.ratio <- mean(Antas.195) / mean(AntasEspinho_TSmonthly)
+A265.ratio <- mean(Antas.265) / mean(AntasEspinho_TSmonthly)
+
+#centred moving average
+
+autoplot(AntasEspinho_TS, series="Data") +
+  autolayer(ma(AntasEspinho_TS,5), series="5-MA") 
+autoplot(AntasEspinho_TS, series="Data") +
+  autolayer(ma(AntasEspinho_TS,20), series="20-MA")
+autoplot(AntasEspinho_TS, series="Data") +
+  autolayer(ma(AntasEspinho_TS,10), series="10-MA")
+####
+
 AntasEspinho_STL=stl(AntasEspinho_TS,s.window='periodic')
 plot(AntasEspinho_STL)
 # 15-day seasonality?
@@ -53,7 +88,9 @@ adf.test(AntasEspinho_TS) # STATIONARY
 ar.yw(AntasEspinho_TS, order.max = 10) # AR(4)
 
 # Auto ARIMA
-auto.arima(AntasEspinho_TS)
+
+model=auto.arima(QualidadeARO3[,1], D=1, Q=2) #D is the seasonal difference order
+forecast = forecast(model, h = 10)
 
 ########## ENTRECAMPOS ##########
 
